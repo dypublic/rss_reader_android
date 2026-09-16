@@ -4,6 +4,8 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH").orNull
+
 android {
     namespace = "com.codex.rssreader"
     compileSdk {
@@ -14,13 +16,25 @@ android {
         applicationId = "com.codex.rssreader"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = providers.environmentVariable("VERSION_CODE").orNull?.toIntOrNull() ?: 1
+        versionName = providers.environmentVariable("VERSION_NAME").orNull ?: "0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        create("release") {
+            if (releaseKeystorePath != null) {
+                storeFile = file(releaseKeystorePath)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
         }
     }
