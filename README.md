@@ -61,6 +61,7 @@ Release workflow 使用固定 keystore 签名，并自动使用 workflow 的递�
 - [开发验证](docs/开发验证.md)
 - [Android 模拟器使用说明](docs/Android模拟器使用说明.md)
 - [发布与签名](docs/发布与签名.md)
+- [故障排查](docs/故障排查.md)
 
 ## 试用范围
 
