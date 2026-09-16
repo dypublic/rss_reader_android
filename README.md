@@ -35,7 +35,7 @@ APK 输出在 `app/build/outputs/apk/debug/app-debug.apk`。可用 `adb install 
 - `rss-reader-v0.1-debug.apk`：可安装 APK。
 - `SHA256SUMS.txt`：APK 完整性校验值。
 
-构建产物保留 30 天。长期分发或覆盖安装正式版本时，应配置固定签名密钥并构建 release APK/AAB。
+构建产物保留 30 天。debug APK 使用 Android 默认调试密钥，不能覆盖安装正式版本；长期使用应从 Releases 下载由固定密钥签名的 release APK。
 
 ### 签名 release APK
 
@@ -57,8 +57,10 @@ Release workflow 使用固定 keystore 签名，并自动使用 workflow 的递�
 - [产品需求](docs/产品需求.md)
 - [模块与开发规划](docs/模块与开发规划.md)
 - [验收用例](docs/验收用例.md)
+- [完整本地开发环境搭建](docs/本地开发环境搭建.md)
 - [开发验证](docs/开发验证.md)
 - [Android 模拟器使用说明](docs/Android模拟器使用说明.md)
+- [发布与签名](docs/发布与签名.md)
 
 ## 试用范围
 

@@ -1,6 +1,6 @@
 # Android 模拟器环境
 
-开发验证使用 Android 16（API 36）ARM64 基础虚拟设备，名称为 `RSS_Android_16`，使用 Pixel 6 硬件配置，不依赖 Play 商店。
+开发验证使用 Android 16（API 36）ARM64 基础虚拟设备，名称为 `RSS_Android_16`，使用 Pixel 6 硬件配置，不依赖 Play 商店。第一次配置电脑时先按[完整本地开发环境搭建](本地开发环境搭建.md)安装 JDK、SDK 和系统镜像。
 
 ## 启动
 
@@ -26,7 +26,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - macOS Hypervisor.Framework 加速检查通过。
 - Android 启动完成，版本 16，架构 arm64-v8a。
 - ADB 连接、返回桌面操作、截图成功。
-- 虚拟设备请求 example.com 获得 HTTP 200；RSS App 已在此模拟器成功读取 [IT之家 HTTPS 订阅源](https://www.ithome.com/rss/)，实际用例见《RSS阅读器开发验证.md》。
+- 虚拟设备请求 example.com 获得 HTTP 200；RSS App 已在此模拟器成功读取 [IT之家 HTTPS 订阅源](https://www.ithome.com/rss/)，实际用例见[开发验证](开发验证.md)。
 
 ## 环境位置与依赖
 
