@@ -216,7 +216,7 @@ private fun ArticleRow(article: ArticleEntity, sourceTitle: String, onClick: () 
                 Text("$sourceTitle · ${articleTime(article)}", color = ReaderMuted, fontSize = 13.sp,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(7.dp))
-                Text(article.title, color = titleColor, fontSize = 20.sp, lineHeight = 28.sp,
+                Text(article.title, color = titleColor, fontSize = 18.sp, lineHeight = 25.sp,
                     fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (article.summary.isNotBlank()) {
                     Spacer(Modifier.height(5.dp))
