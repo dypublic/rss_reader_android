@@ -1,5 +1,7 @@
 # RSS 阅读器 Android
 
+[![Build Android APK](https://github.com/dypublic/rss_reader_android/actions/workflows/android-build.yml/badge.svg)](https://github.com/dypublic/rss_reader_android/actions/workflows/android-build.yml)
+
 这是按已确认需求实现的个人 RSS 阅读器。界面只用浅色，数据保存在本机；订阅源只接受 RSS 2.0 和 Atom。列表只按单个订阅源查看，默认未读，时间最旧优先。文章打开或由用户向下划过屏幕顶部时标为已读；已读文章 30 天后清理，未读文章一直保留。
 
 ## 界面
@@ -23,6 +25,17 @@
 ```
 
 APK 输出在 `app/build/outputs/apk/debug/app-debug.apk`。可用 `adb install -r app/build/outputs/apk/debug/app-debug.apk` 安装到模拟器或设备。
+
+## GitHub 自动构建
+
+推送到 `main` 后，GitHub Actions 会自动运行单元测试并生成可安装的 debug APK。也可以在仓库的 **Actions → Build Android APK → Run workflow** 手动触发。
+
+构建完成后打开对应的 workflow run，在页面底部 **Artifacts** 下载 `rss-reader-debug-构建编号`。压缩包内包含：
+
+- `rss-reader-v0.1-debug.apk`：可安装 APK。
+- `SHA256SUMS.txt`：APK 完整性校验值。
+
+构建产物保留 30 天。长期分发或覆盖安装正式版本时，应配置固定签名密钥并构建 release APK/AAB。
 
 ## 源码结构
 

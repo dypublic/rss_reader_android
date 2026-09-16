@@ -1,0 +1,57 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
+
+      - name: Test and build
+        run: ./gradlew --no-daemon :app:testDebugUnitTest :app:assembleDebug
+
+      - name: Prepare APK
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk dist/rss-reader-v0.1-debug.apk
+          cd dist
+          sha256sum rss-reader-v0.1-debug.apk > SHA256SUMS.txt
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: rss-reader-debug-${{ github.run_number }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
