@@ -13,7 +13,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: android-release-${{ github.ref }}
@@ -111,6 +111,30 @@ jobs:
           path: dist/
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" \
+              "dist/rss-reader-${VERSION_NAME}-release.apk" \
+              dist/SHA256SUMS.txt \
+              dist/SIGNING_CERT.txt \
+              --clobber \
+              --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              "dist/rss-reader-${VERSION_NAME}-release.apk" \
+              dist/SHA256SUMS.txt \
+              dist/SIGNING_CERT.txt \
+              --verify-tag \
+              --title "RSS Reader ${VERSION_NAME}" \
+              --generate-notes \
+              --latest \
+              --repo "$GITHUB_REPOSITORY"
+          fi
 
       - name: Remove keystore
         if: always()

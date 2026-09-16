@@ -39,7 +39,9 @@ APK 输出在 `app/build/outputs/apk/debug/app-debug.apk`。可用 `adb install 
 
 ### 签名 release APK
 
-仓库配置好 `ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS` 和 `ANDROID_KEY_PASSWORD` 四个 Actions Secrets 后，可在 **Actions → Build Signed Release APK → Run workflow** 输入版本号并手动构建。推送 `v*` 标签也会触发构建，标签 `v0.2.0` 会生成 `rss-reader-0.2.0-release.apk`。
+仓库配置好 `ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS` 和 `ANDROID_KEY_PASSWORD` 四个 Actions Secrets 后，可在 **Actions → Build Signed Release APK → Run workflow** 输入版本号并手动构建；这种方式只上传临时 Artifact。
+
+推送 `v*` 标签会触发正式发布：标签 `v0.2.0` 会构建 `rss-reader-0.2.0-release.apk`，创建对应的 GitHub Release，并附上 APK、SHA-256 和签名证书信息。重复运行同一标签时会替换 Release 附件，不会创建重复版本。
 
 Release workflow 使用固定 keystore 签名，并自动使用 workflow 的递增运行编号作为 `versionCode`。产物同时包含 APK 的 SHA-256 文件和签名证书信息。JKS、Base64 副本及本地签名配置均由 `.gitignore` 排除。
 
