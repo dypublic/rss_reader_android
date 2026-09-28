@@ -1,7 +1,6 @@
 package com.codex.rssreader.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -55,7 +56,7 @@ import coil3.compose.AsyncImage
 import com.codex.rssreader.AppViewModel
 import com.codex.rssreader.data.ArticleEntity
 import com.codex.rssreader.data.ReaderRepository
-import com.codex.rssreader.rules.ArticleRules
+import com.codex.rssreader.rules.ScrollReadTracker
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -81,7 +82,6 @@ fun ArticleListScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var confirmKeys by remember { mutableStateOf<List<String>?>(null) }
-    var scrollArmed by remember { mutableStateOf(false) }
     var refreshAnchor by remember { mutableStateOf<RefreshAnchor?>(null) }
 
     LaunchedEffect(sourceId, articlesOrNull, viewModel.unreadOnly, viewModel.listKeys == null) {
@@ -111,37 +111,34 @@ fun ArticleListScreen(
         refreshAnchor = null
     }
 
-    val scrollObserver = remember {
+    val scrollReadTracker = remember(keys) { ScrollReadTracker(keys) }
+    val scrollObserver = remember(scrollReadTracker) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (source == NestedScrollSource.UserInput && available.y < 0f) scrollArmed = true
+                if (source == NestedScrollSource.UserInput && available.y < 0f) {
+                    scrollReadTracker.armDownwardScroll()
+                }
                 return Offset.Zero
             }
         }
     }
-    LaunchedEffect(listState, viewModel.listKeys) {
-        var previous: Int? = null
-        snapshotFlow { listState.firstVisibleItemIndex }.collect { current ->
-            val before = previous
-            if (before != null && keys.isNotEmpty()) {
-                val crossed = ArticleRules.crossedKeys(before, current, keys, scrollArmed)
-                    .filter { byKey[it]?.readAt == null }
-                if (crossed.isNotEmpty()) viewModel.markRead(crossed)
-            }
-            previous = current
-        }
-    }
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress }.collect { inProgress ->
-            if (!inProgress) scrollArmed = false
+    LaunchedEffect(listState, scrollReadTracker) {
+        snapshotFlow { ScrollPosition(listState.firstVisibleItemIndex, listState.isScrollInProgress) }.collect { position ->
+            val crossed = scrollReadTracker.onPosition(position.firstVisibleItemIndex, position.isScrollInProgress)
+                .filter { byKey[it]?.readAt == null }
+            if (crossed.isNotEmpty()) viewModel.markRead(crossed)
         }
     }
 
     Column(modifier.background(Color.White)) {
-        Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "返回") }
-            Text(source?.title ?: "文章", fontSize = 22.sp, fontWeight = FontWeight.Medium,
-                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(start = 6.dp))
+            Text(source?.title ?: "文章", fontSize = 21.sp, fontWeight = FontWeight.Medium,
+                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(start = 4.dp))
+            UnreadSwitch(checked = viewModel.unreadOnly, onCheckedChange = { unreadOnly ->
+                viewModel.selectUnreadFilter(unreadOnly)
+                scope.launch { listState.scrollToItem(0) }
+            })
             IconButton(onClick = ::requestRefresh) {
                 if (viewModel.refreshing) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
                 else Icon(Icons.Default.Refresh, contentDescription = "刷新")
@@ -149,14 +146,6 @@ fun ArticleListScreen(
             IconButton(onClick = { scope.launch { confirmKeys = repository.unreadKeys(sourceId) } }) {
                 Icon(Icons.Default.CheckCircle, contentDescription = "全部标为已读")
             }
-        }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterTab("未读", selected = viewModel.unreadOnly, onClick = {
-                viewModel.selectUnreadFilter(true); scope.launch { listState.scrollToItem(0) }
-            })
-            FilterTab("全部", selected = !viewModel.unreadOnly, onClick = {
-                viewModel.selectUnreadFilter(false); scope.launch { listState.scrollToItem(0) }
-            })
         }
         source?.error?.let {
             Text("刷新失败：$it", color = ReaderOrange, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
@@ -193,12 +182,17 @@ fun ArticleListScreen(
 }
 
 private data class RefreshAnchor(val version: Int, val candidates: List<String>, val offset: Int)
+private data class ScrollPosition(val firstVisibleItemIndex: Int, val isScrollInProgress: Boolean)
 
 @Composable
-private fun FilterTab(label: String, selected: Boolean, onClick: () -> Unit) {
-    Surface(onClick = onClick, shape = RoundedCornerShape(16.dp), color = if (selected) ReaderOrange else Color(0xFFF0F0F4)) {
-        Text(label, color = if (selected) Color.White else ReaderMuted, fontSize = 14.sp,
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp))
+private fun UnreadSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(if (checked) "未读" else "全部", color = ReaderMuted, fontSize = 12.sp)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.scale(0.72f),
+        )
     }
 }
 
@@ -207,27 +201,27 @@ private fun ArticleRow(article: ArticleEntity, sourceTitle: String, onClick: () 
     val read = article.readAt != null
     val titleColor = if (read) ReaderMuted else ReaderText
     Surface(onClick = onClick, color = Color.White, modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(horizontal = 14.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
             if (!read) {
                 Box(Modifier.size(5.dp).background(Color(0xFFF5473A), RoundedCornerShape(50)))
-                Spacer(Modifier.width(8.dp))
-            } else Spacer(Modifier.width(13.dp))
+                Spacer(Modifier.width(7.dp))
+            } else Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("$sourceTitle · ${articleTime(article)}", color = ReaderMuted, fontSize = 11.sp,
+                Text("$sourceTitle · ${articleTime(article)}", color = ReaderMuted, fontSize = 10.sp,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(4.dp))
-                Text(article.title, color = titleColor, fontSize = 16.sp, lineHeight = 22.sp,
+                Spacer(Modifier.height(2.dp))
+                Text(article.title, color = titleColor, fontSize = 15.sp, lineHeight = 18.sp,
                     fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (article.summary.isNotBlank()) {
-                    Spacer(Modifier.height(3.dp))
-                    Text(article.summary, color = ReaderMuted, fontSize = 13.sp, lineHeight = 19.sp,
+                    Spacer(Modifier.height(1.dp))
+                    Text(article.summary, color = ReaderMuted, fontSize = 12.sp, lineHeight = 15.sp,
                         maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
             article.imageUrl?.let { url ->
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(8.dp))
                 AsyncImage(model = url, contentDescription = null,
-                    modifier = Modifier.size(width = 84.dp, height = 78.dp).background(Color(0xFFF2F2F5), RoundedCornerShape(8.dp)),
+                    modifier = Modifier.size(width = 76.dp, height = 72.dp).background(Color(0xFFF2F2F5), RoundedCornerShape(7.dp)),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop)
             }
         }

@@ -18,3 +18,25 @@ object ArticleRules {
     }
 
 }
+
+class ScrollReadTracker(private val orderedKeys: List<String>) {
+    private var previousTop: Int? = null
+    private var downwardGesture = false
+    private val emittedKeys = mutableSetOf<String>()
+
+    fun armDownwardScroll() {
+        downwardGesture = true
+    }
+
+    fun onPosition(firstVisibleItemIndex: Int, isScrollInProgress: Boolean): List<String> {
+        val crossed = ArticleRules.crossedKeys(
+            previousTop = previousTop,
+            currentTop = firstVisibleItemIndex,
+            orderedKeys = orderedKeys,
+            userScrolledDown = downwardGesture,
+        ).filter(emittedKeys::add)
+        previousTop = firstVisibleItemIndex
+        if (!isScrollInProgress) downwardGesture = false
+        return crossed
+    }
+}
