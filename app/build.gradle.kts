@@ -67,6 +67,8 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.2.1")
     implementation("io.coil-kt.coil3:coil-compose:3.6.2")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.2")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:4.12.0")
     implementation("org.jsoup:jsoup:1.23.2")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20260814")

@@ -22,7 +22,7 @@ sealed interface UpdateUiState {
     data class Available(val release: ReleaseInfo) : UpdateUiState
     data class Downloading(val release: ReleaseInfo, val progress: Float?) : UpdateUiState
     data class ReadyToInstall(val release: ReleaseInfo, val apk: File) : UpdateUiState
-    data class Failed(val message: String) : UpdateUiState
+    data class Failed(val message: String, val diagnostics: String) : UpdateUiState
 }
 
 object ReleaseParser {

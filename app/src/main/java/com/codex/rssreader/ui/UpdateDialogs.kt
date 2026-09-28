@@ -3,14 +3,20 @@ package com.codex.rssreader.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.codex.rssreader.update.UpdateUiState
 
 @Composable
@@ -20,6 +26,7 @@ fun UpdateDialogHost(
     onDownload: (UpdateUiState.Available) -> Unit,
     onInstall: (UpdateUiState.ReadyToInstall) -> Unit,
     onOpenRelease: (String) -> Unit,
+    onCopyError: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     when (state) {
@@ -93,8 +100,19 @@ fun UpdateDialogHost(
         is UpdateUiState.Failed -> AlertDialog(
             onDismissRequest = onDismiss,
             title = { Text("更新失败") },
-            text = { Text(state.message) },
-            confirmButton = { TextButton(onClick = onDismiss) { Text("关闭") } },
+            text = {
+                Column(
+                    modifier = Modifier.heightIn(max = 340.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(state.message)
+                    SelectionContainer {
+                        Text(state.diagnostics, color = ReaderMuted, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { onCopyError(state.diagnostics) }) { Text("复制错误信息") } },
+            dismissButton = { TextButton(onClick = onDismiss) { Text("关闭") } },
         )
         UpdateUiState.Idle, is UpdateUiState.Checking -> Unit
     }

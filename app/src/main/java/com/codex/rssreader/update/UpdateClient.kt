@@ -3,13 +3,23 @@ package com.codex.rssreader.update
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
 
 class UpdateClient(private val context: Context) {
+    private val downloadClient = OkHttpClient.Builder()
+        .dns(UpdateDns.create())
+        .connectTimeout(12, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .followRedirects(true)
+        .build()
+
     suspend fun latestRelease(): ReleaseInfo = withContext(Dispatchers.IO) {
         val connection = open(LATEST_RELEASE_URL, "application/vnd.github+json")
         try {
@@ -30,35 +40,42 @@ class UpdateClient(private val context: Context) {
         val finalFile = File(updateDir, release.apkName.replace(Regex("[^0-9A-Za-z._-]"), "_"))
         val temporary = File(updateDir, "${finalFile.name}.part")
         val digest = MessageDigest.getInstance("SHA-256")
-        val connection = open(release.apkUrl, "application/vnd.android.package-archive")
+        val request = Request.Builder()
+            .url(release.apkUrl)
+            .header("User-Agent", "RSSReader-Android")
+            .header("Accept", "application/vnd.android.package-archive")
+            .build()
         try {
-            requireSuccess(connection, "下载更新")
-            val expectedLength = connection.contentLengthLong.takeIf { it > 0 }
-            require(expectedLength == null || expectedLength <= MAX_APK_BYTES) { "更新包超过 200 MB" }
-            var total = 0L
-            var lastPercent = -1
-            connection.inputStream.use { input ->
-                temporary.outputStream().buffered().use { output ->
-                    val buffer = ByteArray(32 * 1024)
-                    while (true) {
-                        val count = input.read(buffer)
-                        if (count == -1) break
-                        total += count
-                        require(total <= MAX_APK_BYTES) { "更新包超过 200 MB" }
-                        output.write(buffer, 0, count)
-                        digest.update(buffer, 0, count)
-                        expectedLength?.let {
-                            val progress = (total.toDouble() / it).toFloat().coerceIn(0f, 1f)
-                            val percent = (progress * 100).toInt()
-                            if (percent != lastPercent) {
-                                lastPercent = percent
-                                onProgress(progress)
+            downloadClient.newCall(request).execute().use { response ->
+                require(response.isSuccessful) { "下载更新失败（HTTP ${response.code}）" }
+                val body = response.body ?: error("下载到的更新包为空")
+                val expectedLength = body.contentLength().takeIf { it > 0 }
+                require(expectedLength == null || expectedLength <= MAX_APK_BYTES) { "更新包超过 200 MB" }
+                var total = 0L
+                var lastPercent = -1
+                body.byteStream().use { input ->
+                    temporary.outputStream().buffered().use { output ->
+                        val buffer = ByteArray(32 * 1024)
+                        while (true) {
+                            val count = input.read(buffer)
+                            if (count == -1) break
+                            total += count
+                            require(total <= MAX_APK_BYTES) { "更新包超过 200 MB" }
+                            output.write(buffer, 0, count)
+                            digest.update(buffer, 0, count)
+                            expectedLength?.let {
+                                val progress = (total.toDouble() / it).toFloat().coerceIn(0f, 1f)
+                                val percent = (progress * 100).toInt()
+                                if (percent != lastPercent) {
+                                    lastPercent = percent
+                                    onProgress(progress)
+                                }
                             }
                         }
                     }
                 }
+                require(total > 0L) { "下载到的更新包为空" }
             }
-            require(total > 0L) { "下载到的更新包为空" }
             val actual = digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
             require(actual == release.apkSha256) { "更新包 SHA-256 校验失败" }
             require(temporary.renameTo(finalFile)) { "无法保存更新包" }
@@ -68,8 +85,6 @@ class UpdateClient(private val context: Context) {
             temporary.delete()
             finalFile.delete()
             throw error
-        } finally {
-            connection.disconnect()
         }
     }
 

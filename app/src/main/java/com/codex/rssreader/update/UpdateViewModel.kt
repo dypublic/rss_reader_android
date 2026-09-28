@@ -2,6 +2,7 @@ package com.codex.rssreader.update
 
 import android.app.Activity
 import android.content.Context
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -15,7 +16,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.net.SocketTimeoutException
+import java.net.URI
 import java.net.UnknownHostException
+import java.time.Instant
 
 class UpdateViewModel(
     context: Context,
@@ -57,7 +60,7 @@ class UpdateViewModel(
                 mutableState.value = UpdateUiState.Idle
                 throw cancelled
             } catch (error: Throwable) {
-                mutableState.value = if (manual) UpdateUiState.Failed(readable(error)) else UpdateUiState.Idle
+                mutableState.value = if (manual) failure("检查更新", error) else UpdateUiState.Idle
             }
         }
     }
@@ -76,14 +79,15 @@ class UpdateViewModel(
                 mutableState.value = UpdateUiState.Idle
                 throw cancelled
             } catch (error: Throwable) {
-                mutableState.value = UpdateUiState.Failed(readable(error))
+                mutableState.value = failure("下载并校验更新", error, release)
             }
         }
     }
 
     fun continueInstall(activity: Activity, ready: UpdateUiState.ReadyToInstall) {
         if (BuildConfig.DEBUG) {
-            mutableState.value = UpdateUiState.Failed("调试版签名与正式版不同，不能覆盖安装正式更新。请在正式版本中验证升级。")
+            val error = IllegalStateException("调试版签名与正式版不同，不能覆盖安装正式更新。请在正式版本中验证升级。")
+            mutableState.value = failure("打开系统安装界面", error, ready.release)
             return
         }
         try {
@@ -91,7 +95,7 @@ class UpdateViewModel(
                 mutableState.value = UpdateUiState.Idle
             }
         } catch (error: Throwable) {
-            mutableState.value = UpdateUiState.Failed(readable(error))
+            mutableState.value = failure("打开系统安装界面", error, ready.release)
         }
     }
 
@@ -100,10 +104,33 @@ class UpdateViewModel(
         mutableState.value = UpdateUiState.Idle
     }
 
-    private fun readable(error: Throwable): String = when (error) {
-        is UnknownHostException -> "无法连接更新服务器，请检查网络后重试"
-        is SocketTimeoutException -> "连接更新服务器超时，请稍后重试"
-        else -> error.message?.takeIf { it.isNotBlank() } ?: "更新失败"
+    private fun failure(stage: String, error: Throwable, release: ReleaseInfo? = null): UpdateUiState.Failed {
+        val causes = generateSequence(error) { it.cause }.take(6).toList()
+        val message = when {
+            causes.any { it is UnknownHostException } -> "无法解析更新服务器，请检查网络或 DNS 后重试"
+            causes.any { it is SocketTimeoutException } -> "连接更新服务器超时，请稍后重试"
+            else -> error.message?.takeIf { it.isNotBlank() } ?: "更新失败"
+        }
+        val diagnostics = buildString {
+            appendLine("RSS Reader 更新错误")
+            appendLine("时间: ${Instant.now()}")
+            appendLine("阶段: $stage")
+            appendLine("应用版本: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+            appendLine("构建类型: ${if (BuildConfig.DEBUG) "debug" else "release"}")
+            appendLine("设备: ${Build.MANUFACTURER} ${Build.MODEL}")
+            appendLine("Android: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
+            release?.let {
+                appendLine("目标版本: ${it.versionName} (${it.tagName})")
+                appendLine("APK: ${it.apkName}")
+                appendLine("下载域名: ${runCatching { URI(it.apkUrl).host }.getOrNull() ?: "未知"}")
+            }
+            causes.forEachIndexed { index, cause ->
+                appendLine("异常${index + 1}: ${cause.javaClass.name}: ${cause.message.orEmpty()}")
+            }
+            appendLine("堆栈:")
+            error.stackTrace.take(8).forEach { appendLine("  at $it") }
+        }.trimEnd()
+        return UpdateUiState.Failed(message, diagnostics)
     }
 
     class Factory(

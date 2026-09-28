@@ -1,7 +1,11 @@
 package com.codex.rssreader
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -99,6 +103,11 @@ class MainActivity : ComponentActivity() {
                     onInstall = { updateViewModel.continueInstall(this@MainActivity, it) },
                     onOpenRelease = { address ->
                         runCatching { startActivity(Intent(Intent.ACTION_VIEW, address.toUri())) }
+                    },
+                    onCopyError = { diagnostics ->
+                        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("RSS Reader 更新错误", diagnostics))
+                        Toast.makeText(this@MainActivity, "错误信息已复制", Toast.LENGTH_SHORT).show()
                     },
                     onDismiss = updateViewModel::dismiss,
                 )
