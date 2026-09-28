@@ -201,15 +201,17 @@ private fun ArticleRow(article: ArticleEntity, sourceTitle: String, onClick: () 
     val read = article.readAt != null
     val titleColor = if (read) ReaderMuted else ReaderText
     Surface(onClick = onClick, color = Color.White, modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(horizontal = 14.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.padding(start = 14.dp, top = 1.dp, end = 14.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             if (!read) {
                 Box(Modifier.size(5.dp).background(Color(0xFFF5473A), RoundedCornerShape(50)))
                 Spacer(Modifier.width(7.dp))
             } else Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("$sourceTitle · ${articleTime(article)}", color = ReaderMuted, fontSize = 10.sp,
+                Text("$sourceTitle · ${articleTime(article)}", color = ReaderMuted, fontSize = 10.sp, lineHeight = 11.sp,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(1.dp))
                 Text(article.title, color = titleColor, fontSize = 14.sp, lineHeight = 17.sp,
                     fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (article.summary.isNotBlank()) {
