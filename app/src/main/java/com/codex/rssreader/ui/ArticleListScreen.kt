@@ -138,10 +138,10 @@ fun ArticleListScreen(
     }
 
     Column(modifier.background(Color.White)) {
-        Row(Modifier.fillMaxWidth().height(72.dp).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "返回") }
-            Text(source?.title ?: "文章", fontSize = 24.sp, fontWeight = FontWeight.Medium,
-                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(start = 8.dp))
+            Text(source?.title ?: "文章", fontSize = 22.sp, fontWeight = FontWeight.Medium,
+                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(start = 6.dp))
             IconButton(onClick = ::requestRefresh) {
                 if (viewModel.refreshing) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
                 else Icon(Icons.Default.Refresh, contentDescription = "刷新")
@@ -150,7 +150,7 @@ fun ArticleListScreen(
                 Icon(Icons.Default.CheckCircle, contentDescription = "全部标为已读")
             }
         }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 9.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterTab("未读", selected = viewModel.unreadOnly, onClick = {
                 viewModel.selectUnreadFilter(true); scope.launch { listState.scrollToItem(0) }
             })
@@ -159,7 +159,7 @@ fun ArticleListScreen(
             })
         }
         source?.error?.let {
-            Text("刷新失败：$it", color = ReaderOrange, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 22.dp, vertical = 5.dp))
+            Text("刷新失败：$it", color = ReaderOrange, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
         }
         HorizontalDivider(color = Color(0xFFEAEAF0))
         PullToRefreshBox(
@@ -196,9 +196,9 @@ private data class RefreshAnchor(val version: Int, val candidates: List<String>,
 
 @Composable
 private fun FilterTab(label: String, selected: Boolean, onClick: () -> Unit) {
-    Surface(onClick = onClick, shape = RoundedCornerShape(18.dp), color = if (selected) ReaderOrange else Color(0xFFF0F0F4)) {
-        Text(label, color = if (selected) Color.White else ReaderMuted, fontSize = 15.sp,
-            modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp))
+    Surface(onClick = onClick, shape = RoundedCornerShape(16.dp), color = if (selected) ReaderOrange else Color(0xFFF0F0F4)) {
+        Text(label, color = if (selected) Color.White else ReaderMuted, fontSize = 14.sp,
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp))
     }
 }
 
@@ -207,27 +207,27 @@ private fun ArticleRow(article: ArticleEntity, sourceTitle: String, onClick: () 
     val read = article.readAt != null
     val titleColor = if (read) ReaderMuted else ReaderText
     Surface(onClick = onClick, color = Color.White, modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(horizontal = 18.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             if (!read) {
-                Box(Modifier.size(6.dp).background(Color(0xFFF5473A), RoundedCornerShape(50)))
-                Spacer(Modifier.width(9.dp))
-            } else Spacer(Modifier.width(15.dp))
+                Box(Modifier.size(5.dp).background(Color(0xFFF5473A), RoundedCornerShape(50)))
+                Spacer(Modifier.width(8.dp))
+            } else Spacer(Modifier.width(13.dp))
             Column(Modifier.weight(1f)) {
-                Text("$sourceTitle · ${articleTime(article)}", color = ReaderMuted, fontSize = 12.sp,
+                Text("$sourceTitle · ${articleTime(article)}", color = ReaderMuted, fontSize = 11.sp,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(7.dp))
-                Text(article.title, color = titleColor, fontSize = 18.sp, lineHeight = 25.sp,
+                Spacer(Modifier.height(4.dp))
+                Text(article.title, color = titleColor, fontSize = 16.sp, lineHeight = 22.sp,
                     fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (article.summary.isNotBlank()) {
-                    Spacer(Modifier.height(5.dp))
-                    Text(article.summary, color = ReaderMuted, fontSize = 14.sp, lineHeight = 21.sp,
+                    Spacer(Modifier.height(3.dp))
+                    Text(article.summary, color = ReaderMuted, fontSize = 13.sp, lineHeight = 19.sp,
                         maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
             article.imageUrl?.let { url ->
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(10.dp))
                 AsyncImage(model = url, contentDescription = null,
-                    modifier = Modifier.size(width = 96.dp, height = 90.dp).background(Color(0xFFF2F2F5), RoundedCornerShape(9.dp)),
+                    modifier = Modifier.size(width = 84.dp, height = 78.dp).background(Color(0xFFF2F2F5), RoundedCornerShape(8.dp)),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop)
             }
         }
