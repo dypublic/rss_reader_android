@@ -181,9 +181,10 @@ private fun readerHtml(article: ArticleEntity, baseUrl: String, fontSize: Int, s
     }
     val stamp = Instant.ofEpochMilli(article.sortAt).atZone(ZoneId.systemDefault())
         .format(DateTimeFormatter.ofPattern("yyyy年M月d日"))
+    val titleSize = fontSize + 2
     return """<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head>
         <body style="margin:0;padding:0 22px 24px;color:#283542;font: ${fontSize}px/1.75 sans-serif;overflow-wrap:anywhere">
-        <style>h1{margin:25px 0 15px;color:#151719;font:600 31px/1.4 sans-serif} .meta{color:#92969c;font:14px/1.5 sans-serif;margin-bottom:36px}
+        <style>h1{margin:25px 0 15px;color:#283542;font:500 ${titleSize}px/1.4 sans-serif} .meta{color:#92969c;font:14px/1.5 sans-serif;margin-bottom:36px}
         img{max-width:100%;height:auto;border-radius:8px}pre,code{white-space:pre-wrap;overflow-wrap:anywhere}blockquote{border-left:3px solid #e5e6eb;margin:20px 0;padding-left:16px;font-style:italic}a{color:#e65e11}</style>
         <h1>${TextUtils.htmlEncode(article.title)}</h1>
         <div class="meta">${TextUtils.htmlEncode(sourceTitle)} · $stamp</div>
