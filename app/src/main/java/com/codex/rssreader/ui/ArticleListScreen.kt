@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -199,7 +200,7 @@ private fun UnreadSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
 @Composable
 private fun ArticleRow(article: ArticleEntity, sourceTitle: String, onClick: () -> Unit) {
     val read = article.readAt != null
-    val titleColor = if (read) ReaderMuted else ReaderText
+    val titleColor = if (read) ReaderMuted else Color(0xFF30343A)
     Surface(onClick = onClick, color = Color.White, modifier = Modifier.fillMaxWidth()) {
         Row(
             Modifier.padding(start = 14.dp, top = 1.dp, end = 14.dp, bottom = 4.dp),
@@ -213,7 +214,8 @@ private fun ArticleRow(article: ArticleEntity, sourceTitle: String, onClick: () 
                 Text("$sourceTitle · ${articleTime(article)}", color = ReaderMuted, fontSize = 10.sp, lineHeight = 11.sp,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(article.title, color = titleColor, fontSize = 14.sp, lineHeight = 17.sp,
-                    fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (article.summary.isNotBlank()) {
                     Spacer(Modifier.height(1.dp))
                     Text(article.summary, color = ReaderMuted, fontSize = 12.sp, lineHeight = 15.sp,
