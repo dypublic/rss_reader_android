@@ -79,6 +79,10 @@ fun ArticleListScreen(
     val allArticles = articlesOrNull.orEmpty()
     val sourceFlow = remember(repository) { repository.subscriptions() }
     val sources by sourceFlow.collectAsState(initial = emptyList())
+    val titleSizeFlow = remember(repository) { repository.preferences.listTitleSize }
+    val titleSize by titleSizeFlow.collectAsState(initial = 12f)
+    val summarySizeFlow = remember(repository) { repository.preferences.listSummarySize }
+    val summarySize by summarySizeFlow.collectAsState(initial = 10.5f)
     val source = sources.firstOrNull { it.subscription.id == sourceId }?.subscription
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -166,7 +170,8 @@ fun ArticleListScreen(
             } else {
                 LazyColumn(Modifier.fillMaxSize().nestedScroll(scrollObserver), state = listState) {
                     itemsIndexed(shown, key = { _, article -> article.articleKey }) { _, article ->
-                        ArticleRow(article, source?.title ?: "订阅源", onClick = { onOpen(article.articleKey) })
+                        ArticleRow(article, source?.title ?: "订阅源", titleSize, summarySize,
+                            onClick = { onOpen(article.articleKey) })
                         HorizontalDivider(color = Color(0xFFEAEAF0), thickness = 0.5.dp)
                     }
                 }
@@ -198,12 +203,18 @@ private fun UnreadSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
 }
 
 @Composable
-private fun ArticleRow(article: ArticleEntity, sourceTitle: String, onClick: () -> Unit) {
+private fun ArticleRow(
+    article: ArticleEntity,
+    sourceTitle: String,
+    titleSize: Float,
+    summarySize: Float,
+    onClick: () -> Unit,
+) {
     val read = article.readAt != null
     val titleColor = if (read) ReaderMuted else Color(0xFF30343A)
     Surface(onClick = onClick, color = Color.White, modifier = Modifier.fillMaxWidth()) {
         Row(
-            Modifier.padding(start = 14.dp, top = 1.dp, end = 14.dp, bottom = 4.dp),
+            Modifier.padding(start = 14.dp, top = 5.dp, end = 14.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (!read) {
@@ -213,12 +224,13 @@ private fun ArticleRow(article: ArticleEntity, sourceTitle: String, onClick: () 
             Column(Modifier.weight(1f)) {
                 Text("$sourceTitle · ${articleTime(article)}", color = ReaderMuted, fontSize = 10.sp, lineHeight = 11.sp,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(article.title, color = titleColor, fontSize = 13.sp, lineHeight = 16.sp,
+                Text(article.title, color = titleColor, fontSize = titleSize.sp, lineHeight = (titleSize + 3f).sp,
                     fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (article.summary.isNotBlank()) {
                     Spacer(Modifier.height(1.dp))
-                    Text(article.summary, color = ReaderMuted, fontSize = 11.sp, lineHeight = 14.sp,
+                    Text(article.summary, color = ReaderMuted, fontSize = summarySize.sp,
+                        lineHeight = (summarySize + 2.5f).sp,
                         maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
