@@ -199,13 +199,13 @@ private fun ArticleRow(
     val titleColor = if (read) ReaderMuted else Color(0xFF30343A)
     Surface(onClick = onClick, color = Color.White, modifier = Modifier.fillMaxWidth()) {
         Row(
-            Modifier.padding(start = 14.dp, top = 5.dp, end = 14.dp, bottom = 4.dp),
+            Modifier.padding(start = 10.dp, top = 5.dp, end = 14.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (!read) {
                 Box(Modifier.size(5.dp).background(Color(0xFFF5473A), RoundedCornerShape(50)))
-                Spacer(Modifier.width(7.dp))
-            } else Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(5.dp))
+            } else Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 if (article.imageUrl == null) {
                     Text(articleTime(article), color = ReaderMuted, fontSize = 10.sp, lineHeight = 11.sp,
