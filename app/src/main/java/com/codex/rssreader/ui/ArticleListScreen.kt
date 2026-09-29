@@ -199,7 +199,7 @@ private fun ArticleRow(
     val titleColor = if (read) ReaderMuted else Color(0xFF30343A)
     Surface(onClick = onClick, color = Color.White, modifier = Modifier.fillMaxWidth()) {
         Row(
-            Modifier.padding(start = 10.dp, top = 5.dp, end = 14.dp, bottom = 4.dp),
+            Modifier.padding(start = 5.dp, top = 5.dp, end = 14.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (!read) {
