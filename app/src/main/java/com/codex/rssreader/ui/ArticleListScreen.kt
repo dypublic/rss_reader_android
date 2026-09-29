@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -156,7 +157,7 @@ fun ArticleListScreen(
             } else {
                 LazyColumn(Modifier.fillMaxSize(), state = listState) {
                     itemsIndexed(shown, key = { _, article -> article.articleKey }) { _, article ->
-                        ArticleRow(article, source?.title ?: "订阅源", titleSize, summarySize,
+                        ArticleRow(article, titleSize, summarySize,
                             onClick = { onOpen(article.articleKey) })
                         HorizontalDivider(color = Color(0xFFEAEAF0), thickness = 0.5.dp)
                     }
@@ -190,7 +191,6 @@ private fun UnreadSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
 @Composable
 private fun ArticleRow(
     article: ArticleEntity,
-    sourceTitle: String,
     titleSize: Float,
     summarySize: Float,
     onClick: () -> Unit,
@@ -207,25 +207,38 @@ private fun ArticleRow(
                 Spacer(Modifier.width(7.dp))
             } else Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("$sourceTitle · ${articleTime(article)}", color = ReaderMuted, fontSize = 10.sp, lineHeight = 11.sp,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(article.title, color = titleColor, fontSize = titleSize.sp, lineHeight = (titleSize + 3f).sp,
-                    fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis)
-                if (article.summary.isNotBlank()) {
-                    Spacer(Modifier.height(1.dp))
-                    Text(article.summary, color = ReaderMuted, fontSize = summarySize.sp,
-                        lineHeight = (summarySize + 2.5f).sp,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (article.imageUrl == null) {
+                    Text(articleTime(article), color = ReaderMuted, fontSize = 10.sp, lineHeight = 11.sp,
+                        textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+                ArticleText(article, titleColor, titleSize, summarySize)
             }
             article.imageUrl?.let { url ->
                 Spacer(Modifier.width(8.dp))
-                AsyncImage(model = url, contentDescription = null,
-                    modifier = Modifier.size(width = 76.dp, height = 72.dp).background(Color(0xFFF2F2F5), RoundedCornerShape(7.dp)),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                Column(Modifier.width(76.dp)) {
+                    Text(articleTime(article), color = ReaderMuted, fontSize = 10.sp, lineHeight = 11.sp,
+                        textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    AsyncImage(model = url, contentDescription = null,
+                        modifier = Modifier.size(width = 76.dp, height = 72.dp).background(Color(0xFFF2F2F5), RoundedCornerShape(7.dp)),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun ArticleText(article: ArticleEntity, titleColor: Color, titleSize: Float, summarySize: Float) {
+    Text(article.title, color = titleColor, fontSize = titleSize.sp, lineHeight = (titleSize + 3f).sp,
+        fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,
+        maxLines = 2, overflow = TextOverflow.Ellipsis)
+    if (article.summary.isNotBlank()) {
+        Spacer(Modifier.height(1.dp))
+        Text(article.summary, color = ReaderMuted, fontSize = summarySize.sp,
+            lineHeight = (summarySize + 2.5f).sp,
+            maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 
