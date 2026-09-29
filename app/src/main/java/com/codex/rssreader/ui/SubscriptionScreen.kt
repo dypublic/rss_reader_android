@@ -83,13 +83,6 @@ fun SubscriptionScreen(
         }
         LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 18.dp)) {
             item {
-                Surface(shape = RoundedCornerShape(26.dp), color = ReaderOrange, modifier = Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(horizontal = 27.dp, vertical = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("订阅源", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                        Text("${sources.size}", color = Color.White, fontSize = 16.sp)
-                    }
-                }
-                Spacer(Modifier.height(28.dp))
                 Text("订阅源", color = ReaderMuted, fontSize = 18.sp, modifier = Modifier.padding(horizontal = 12.dp))
                 Spacer(Modifier.height(14.dp))
             }
