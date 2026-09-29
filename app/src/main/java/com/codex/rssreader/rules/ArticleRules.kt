@@ -10,33 +10,41 @@ object ArticleRules {
             .map { keyOf(it.value) }
             .toSet()
 
-    fun crossedKeys(previousTop: Int?, currentTop: Int, orderedKeys: List<String>, userScrolledDown: Boolean): List<String> {
-        if (!userScrolledDown || previousTop == null || currentTop <= previousTop) return emptyList()
+    fun exitedKeys(previousTop: Int?, currentTop: Int, orderedKeys: List<String>): List<String> {
+        if (previousTop == null || currentTop <= previousTop) return emptyList()
         val from = previousTop.coerceIn(0, orderedKeys.size)
         val until = currentTop.coerceIn(0, orderedKeys.size)
         return if (until > from) orderedKeys.subList(from, until) else emptyList()
     }
 
+    fun appendNewKeys(currentKeys: List<String>?, selectedKeys: List<String>): List<String> {
+        if (currentKeys == null) return selectedKeys
+        val existing = currentKeys.toHashSet()
+        return currentKeys + selectedKeys.filter(existing::add)
+    }
 }
 
-class ScrollReadTracker(private val orderedKeys: List<String>) {
+class ScrollReadTracker {
+    private var orderedKeys: List<String> = emptyList()
     private var previousTop: Int? = null
-    private var downwardGesture = false
     private val emittedKeys = mutableSetOf<String>()
 
-    fun armDownwardScroll() {
-        downwardGesture = true
+    fun updateKeys(keys: List<String>) {
+        if (orderedKeys == keys) return
+        // A removal or reorder changes what an index means. The next position becomes a new baseline.
+        if (orderedKeys.isEmpty() || keys.size < orderedKeys.size || keys.take(orderedKeys.size) != orderedKeys) {
+            previousTop = null
+        }
+        orderedKeys = keys
     }
 
-    fun onPosition(firstVisibleItemIndex: Int, isScrollInProgress: Boolean): List<String> {
-        val crossed = ArticleRules.crossedKeys(
+    fun onPosition(firstVisibleItemIndex: Int): List<String> {
+        val exited = ArticleRules.exitedKeys(
             previousTop = previousTop,
             currentTop = firstVisibleItemIndex,
             orderedKeys = orderedKeys,
-            userScrolledDown = downwardGesture,
         ).filter(emittedKeys::add)
         previousTop = firstVisibleItemIndex
-        if (!isScrollInProgress) downwardGesture = false
-        return crossed
+        return exited
     }
 }

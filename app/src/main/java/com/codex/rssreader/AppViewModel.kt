@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.codex.rssreader.data.ArticleEntity
 import com.codex.rssreader.data.ReaderRepository
+import com.codex.rssreader.rules.ArticleRules
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -65,7 +66,8 @@ class AppViewModel(val repository: ReaderRepository) : ViewModel() {
             try { repository.refreshSource(id) } finally {
                 try {
                     val rows = repository.articles(id).first()
-                    listKeys = rows.filter { !unreadOnly || it.readAt == null }.map { it.articleKey }
+                    val selected = rows.filter { !unreadOnly || it.readAt == null }.map { it.articleKey }
+                    listKeys = ArticleRules.appendNewKeys(listKeys, selected)
                     sourceRefreshVersion += 1
                 } finally { refreshing = false }
             }

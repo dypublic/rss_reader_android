@@ -43,11 +43,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -116,22 +112,12 @@ fun ArticleListScreen(
         refreshAnchor = null
     }
 
-    val scrollReadTracker = remember(keys) { ScrollReadTracker(keys) }
-    val scrollObserver = remember(scrollReadTracker) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (source == NestedScrollSource.UserInput && available.y < 0f) {
-                    scrollReadTracker.armDownwardScroll()
-                }
-                return Offset.Zero
-            }
-        }
-    }
-    LaunchedEffect(listState, scrollReadTracker) {
-        snapshotFlow { ScrollPosition(listState.firstVisibleItemIndex, listState.isScrollInProgress) }.collect { position ->
-            val crossed = scrollReadTracker.onPosition(position.firstVisibleItemIndex, position.isScrollInProgress)
-                .filter { byKey[it]?.readAt == null }
-            if (crossed.isNotEmpty()) viewModel.markRead(crossed)
+    val scrollReadTracker = remember(sourceId, viewModel.unreadOnly) { ScrollReadTracker() }
+    LaunchedEffect(listState, scrollReadTracker, renderedKeys) {
+        scrollReadTracker.updateKeys(renderedKeys)
+        snapshotFlow { listState.firstVisibleItemIndex }.collect { firstVisibleIndex ->
+            val exited = scrollReadTracker.onPosition(firstVisibleIndex)
+            if (exited.isNotEmpty()) viewModel.markRead(exited)
         }
     }
 
@@ -168,7 +154,7 @@ fun ArticleListScreen(
                     Text(if (viewModel.unreadOnly) "已读完，切换“全部”查看历史文章" else "暂无文章", color = ReaderMuted)
                 }
             } else {
-                LazyColumn(Modifier.fillMaxSize().nestedScroll(scrollObserver), state = listState) {
+                LazyColumn(Modifier.fillMaxSize(), state = listState) {
                     itemsIndexed(shown, key = { _, article -> article.articleKey }) { _, article ->
                         ArticleRow(article, source?.title ?: "订阅源", titleSize, summarySize,
                             onClick = { onOpen(article.articleKey) })
@@ -188,7 +174,6 @@ fun ArticleListScreen(
 }
 
 private data class RefreshAnchor(val version: Int, val candidates: List<String>, val offset: Int)
-private data class ScrollPosition(val firstVisibleItemIndex: Int, val isScrollInProgress: Boolean)
 
 @Composable
 private fun UnreadSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
