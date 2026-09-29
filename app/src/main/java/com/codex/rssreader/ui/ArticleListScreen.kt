@@ -46,7 +46,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -207,38 +206,30 @@ private fun ArticleRow(
                 Spacer(Modifier.width(5.dp))
             } else Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                if (article.imageUrl == null) {
-                    Text(articleTime(article), color = ReaderMuted, fontSize = 10.sp, lineHeight = 11.sp,
-                        textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth(),
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                ArticleText(article, titleColor, titleSize, summarySize)
-            }
-            article.imageUrl?.let { url ->
-                Spacer(Modifier.width(8.dp))
-                Column(Modifier.width(76.dp)) {
-                    Text(articleTime(article), color = ReaderMuted, fontSize = 10.sp, lineHeight = 11.sp,
-                        textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth(),
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    AsyncImage(model = url, contentDescription = null,
-                        modifier = Modifier.size(width = 76.dp, height = 72.dp).background(Color(0xFFF2F2F5), RoundedCornerShape(7.dp)),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                Text(article.title, color = titleColor, fontSize = titleSize.sp, lineHeight = (titleSize + 3f).sp,
+                    fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(2.dp))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                    Column(Modifier.weight(1f)) {
+                        if (article.summary.isNotBlank()) {
+                            Text(article.summary, color = ReaderMuted, fontSize = summarySize.sp,
+                                lineHeight = (summarySize + 2.5f).sp,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                        if (article.summary.isNotBlank()) Spacer(Modifier.height(2.dp))
+                        Text(articleTime(article), color = ReaderMuted, fontSize = 10.sp, lineHeight = 11.sp,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    article.imageUrl?.let { url ->
+                        Spacer(Modifier.width(8.dp))
+                        AsyncImage(model = url, contentDescription = null,
+                            modifier = Modifier.size(width = 76.dp, height = 72.dp).background(Color(0xFFF2F2F5), RoundedCornerShape(7.dp)),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ArticleText(article: ArticleEntity, titleColor: Color, titleSize: Float, summarySize: Float) {
-    Text(article.title, color = titleColor, fontSize = titleSize.sp, lineHeight = (titleSize + 3f).sp,
-        fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,
-        maxLines = 2, overflow = TextOverflow.Ellipsis)
-    if (article.summary.isNotBlank()) {
-        Spacer(Modifier.height(1.dp))
-        Text(article.summary, color = ReaderMuted, fontSize = summarySize.sp,
-            lineHeight = (summarySize + 2.5f).sp,
-            maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 
