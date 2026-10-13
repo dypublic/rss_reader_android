@@ -43,6 +43,7 @@ fun SettingsScreen(
     repository: ReaderRepository,
     updateState: UpdateUiState,
     onCheckForUpdate: () -> Unit,
+    onOpenLogs: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -106,6 +107,14 @@ fun SettingsScreen(
                         onClick = onCheckForUpdate,
                         enabled = updateState !is UpdateUiState.Checking && updateState !is UpdateUiState.Downloading,
                     ) { Text(if (updateState is UpdateUiState.Checking) "正在检查…" else "检查更新") }
+                }
+            }
+            Surface(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 20.dp)) {
+                Column(Modifier.padding(20.dp)) {
+                    Text("运行日志", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.height(4.dp))
+                    Text("查看前台和后台刷新记录，旧日志自动覆盖。", color = ReaderMuted, fontSize = 13.sp)
+                    TextButton(onClick = onOpenLogs) { Text("查看运行日志") }
                 }
             }
         }

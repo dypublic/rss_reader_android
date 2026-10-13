@@ -51,6 +51,8 @@ Release workflow 使用固定 keystore 签名，并自动使用 workflow 的递�
 - `app/src/main/java/com/codex/rssreader/data/`：RSS/Atom 获取解析、Room 本地数据库、DataStore 字号设置和刷新仓库。
 - `app/src/main/java/com/codex/rssreader/rules/`：首次最新 20 篇和快速滑过的已读范围规则。
 - `app/src/main/java/com/codex/rssreader/AppViewModel.kt`：刷新和列表状态。
+- `app/src/main/java/com/codex/rssreader/sync/`：WorkManager 每 15 分钟后台刷新及有限重试。
+- `app/src/main/java/com/codex/rssreader/diagnostics/`：本地运行日志，最多 3 个 128 KB 文件；设置 → 运行日志查看。
 
 进一步资料：
 
@@ -65,4 +67,4 @@ Release workflow 使用固定 keystore 签名，并自动使用 workflow 的递�
 
 ## 试用范围
 
-APK 已在本地 Android 16 ARM64 模拟器安装和运行；尚未在真实手机上验收。文章文字和已读状态可本地保存，正文图片按需联网加载。当前未提供账号、收藏、分组、跨来源全部文章页、后台定时刷新、深色主题或网页全文抓取。
+APK 已在本地 Android 16 ARM64 模拟器安装和运行；尚未在真实手机上验收。文章文字和已读状态可本地保存，正文图片按需联网加载。后台刷新每 15 分钟调度一次，需要网络；系统省电或厂商后台限制可能延迟执行，无法承诺 RSS 条目完全不缺失。当前未提供账号、收藏、分组、跨来源全部文章页、深色主题或网页全文抓取。

@@ -22,18 +22,19 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
-import com.codex.rssreader.data.ReaderRepository
 import com.codex.rssreader.ui.ArticleListScreen
 import com.codex.rssreader.ui.ReaderScreen
 import com.codex.rssreader.ui.ReaderTheme
 import com.codex.rssreader.ui.SettingsScreen
 import com.codex.rssreader.ui.SubscriptionScreen
 import com.codex.rssreader.ui.UpdateDialogHost
+import com.codex.rssreader.ui.RuntimeLogScreen
 import com.codex.rssreader.update.UpdateUiState
 import com.codex.rssreader.update.UpdateViewModel
 
 class MainActivity : ComponentActivity() {
-    private val repository by lazy { ReaderRepository(applicationContext) }
+    private val readerApplication get() = application as ReaderApplication
+    private val repository get() = readerApplication.repository
     private val appViewModel by viewModels<AppViewModel> { AppViewModel.Factory(repository) }
     private val updateViewModel by viewModels<UpdateViewModel> {
         UpdateViewModel.Factory(applicationContext, repository.preferences)
@@ -47,11 +48,13 @@ class MainActivity : ComponentActivity() {
                 var sourceId by rememberSaveable { mutableStateOf<Long?>(null) }
                 var articleKey by rememberSaveable { mutableStateOf<String?>(null) }
                 var settingsOpen by rememberSaveable { mutableStateOf(false) }
+                var logsOpen by rememberSaveable { mutableStateOf(false) }
                 val holder = rememberSaveableStateHolder()
                 val updateState by updateViewModel.state.collectAsState()
 
-                BackHandler(articleKey != null || sourceId != null || settingsOpen) {
+                BackHandler(articleKey != null || sourceId != null || settingsOpen || logsOpen) {
                     when {
+                        logsOpen -> logsOpen = false
                         articleKey != null -> articleKey = null
                         settingsOpen -> settingsOpen = false
                         else -> sourceId = null
@@ -60,6 +63,11 @@ class MainActivity : ComponentActivity() {
 
                 val rootModifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)
                 when {
+                    logsOpen -> RuntimeLogScreen(
+                        logs = readerApplication.runtimeLogs,
+                        onBack = { logsOpen = false },
+                        modifier = rootModifier,
+                    )
                     articleKey != null -> ReaderScreen(
                         articleKey = articleKey!!,
                         repository = repository,
@@ -70,6 +78,7 @@ class MainActivity : ComponentActivity() {
                         repository = repository,
                         updateState = updateState,
                         onCheckForUpdate = { updateViewModel.check() },
+                        onOpenLogs = { logsOpen = true },
                         onBack = { settingsOpen = false },
                         modifier = rootModifier,
                     )

@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.codex.rssreader.data.ArticleEntity
 import com.codex.rssreader.data.ReaderRepository
 import com.codex.rssreader.rules.ArticleRules
+import com.codex.rssreader.sync.RefreshTrigger
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -34,7 +35,7 @@ class AppViewModel(val repository: ReaderRepository) : ViewModel() {
         viewModelScope.launch {
             repository.clearExpired()
             refreshing = true
-            try { repository.refreshAll() } finally { refreshing = false }
+            try { repository.refreshAll(RefreshTrigger.APP_START) } finally { refreshing = false }
         }
     }
 
