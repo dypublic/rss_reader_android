@@ -8,6 +8,7 @@ import com.codex.rssreader.diagnostics.LogLevel
 import com.codex.rssreader.diagnostics.RuntimeLogStore
 import com.codex.rssreader.sync.RefreshSummary
 import com.codex.rssreader.sync.RefreshTrigger
+import com.codex.rssreader.sync.AutoRefreshPolicy
 import android.os.SystemClock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -75,7 +76,14 @@ class ReaderRepository(context: Context, private val logs: RuntimeLogStore) {
         val startedAt = SystemClock.elapsedRealtime()
         logs.record("${trigger.label}开始", sourceId?.let { "来源 ID $it" } ?: "全部订阅源")
         try {
-            val sources = if (sourceId == null) dao.allSubscriptions() else listOfNotNull(dao.subscription(sourceId))
+            val candidates = if (sourceId == null) dao.allSubscriptions() else listOfNotNull(dao.subscription(sourceId))
+            val now = System.currentTimeMillis()
+            val sources = if (trigger == RefreshTrigger.APP_START) {
+                candidates.filter { AutoRefreshPolicy.isDue(it.lastRefreshedAt, now) }
+            } else candidates
+            if (trigger == RefreshTrigger.APP_START && sources.size < candidates.size) {
+                logs.record("打开应用使用缓存", "${candidates.size - sources.size} 个来源在 15 分钟内已成功更新；无需再次获取")
+            }
             var succeeded = 0
             var failed = 0
             var newArticles = 0

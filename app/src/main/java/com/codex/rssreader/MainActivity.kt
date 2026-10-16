@@ -65,6 +65,7 @@ class MainActivity : ComponentActivity() {
                 when {
                     logsOpen -> RuntimeLogScreen(
                         logs = readerApplication.runtimeLogs,
+                        diagnostics = readerApplication.backgroundDiagnostics,
                         onBack = { logsOpen = false },
                         modifier = rootModifier,
                     )
@@ -126,7 +127,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        readerApplication.recordBackgroundDiagnostics("进入前台")
         appViewModel.onAppStart()
         updateViewModel.autoCheck()
+    }
+
+    override fun onStop() {
+        readerApplication.recordBackgroundDiagnostics("离开前台")
+        super.onStop()
     }
 }

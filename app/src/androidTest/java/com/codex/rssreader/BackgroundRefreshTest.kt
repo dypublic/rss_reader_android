@@ -20,6 +20,22 @@ import kotlin.concurrent.thread
 
 @RunWith(AndroidJUnit4::class)
 class BackgroundRefreshTest {
+    @Test fun diagnosticsReadsOwnSystemStateWithoutChangingThePeriodicTask() = runBlocking {
+        val app = ApplicationProvider.getApplicationContext<ReaderApplication>()
+        BackgroundRefresh.schedule(app)
+        val manager = WorkManager.getInstance(app)
+        val before = manager.getWorkInfosForUniqueWork(BackgroundRefresh.WORK_NAME).get(10, TimeUnit.SECONDS).single()
+        val snapshot = app.backgroundDiagnostics.captureAndRecord("测试采样")
+        val after = manager.getWorkInfosForUniqueWork(BackgroundRefresh.WORK_NAME).get(10, TimeUnit.SECONDS).single()
+        assertEquals(before.id, after.id)
+        assertEquals(before.nextScheduleTimeMillis, after.nextScheduleTimeMillis)
+        assertTrue(snapshot.lines.any { it.contains("电池优化豁免") })
+        assertTrue(snapshot.lines.any { it.contains("网络已验证") })
+        assertTrue(snapshot.lines.any { it.contains(before.id.toString()) })
+        assertFalse(snapshot.asText(), snapshot.lines.any { it.contains("读取失败") })
+        assertTrue(app.runtimeLogs.readEntries().any { it.event == "后台诊断 · 测试采样" })
+    }
+
     @Test fun schedulingTwiceKeepsOneTaskAndItsNextRunTime() = runBlocking {
         val app = ApplicationProvider.getApplicationContext<ReaderApplication>()
         val manager = WorkManager.getInstance(app)
@@ -72,6 +88,8 @@ class BackgroundRefreshTest {
             assertTrue(app.repository.subscription(broken)!!.error!!.contains("503"))
             assertEquals(1, app.repository.articles(broken).first().size)
             val logs = app.runtimeLogs.readEntries()
+            assertTrue(logs.any { it.event == "后台诊断 · 任务开始" && it.details.contains("深度 Doze") })
+            assertTrue(logs.any { it.event == "后台诊断 · 任务返回结果前" && it.details.contains("网络已验证") })
             assertTrue(logs.any { it.event == "后台任务结束" && it.details.contains("等待重试") })
             assertTrue(logs.any { it.event == "后台刷新来源失败" && it.details.contains("ID $broken") })
             assertTrue(logs.any { it.event == "后台刷新来源成功" && it.details.contains("ID $healthy") && it.details.contains("新增 1 篇") })

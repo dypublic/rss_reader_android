@@ -23,20 +23,10 @@ class AppViewModel(val repository: ReaderRepository) : ViewModel() {
         private set
     var sourceRefreshVersion by mutableIntStateOf(0)
         private set
-    private var openedOnce = false
-    private var lastRefreshStartedAt = 0L
-
-    fun onAppStart() {
-        val now = System.currentTimeMillis()
-        val shouldRefresh = !openedOnce || now - lastRefreshStartedAt > 15 * 60_000L
-        openedOnce = true
-        if (!shouldRefresh) return
-        lastRefreshStartedAt = now
-        viewModelScope.launch {
-            repository.clearExpired()
-            refreshing = true
-            try { repository.refreshAll(RefreshTrigger.APP_START) } finally { refreshing = false }
-        }
+    fun onAppStart() = viewModelScope.launch {
+        repository.clearExpired()
+        // Automatic refresh reads cached content immediately and never drives UI progress.
+        repository.refreshAll(RefreshTrigger.APP_START)
     }
 
     fun enterSource() {
@@ -79,7 +69,6 @@ class AppViewModel(val repository: ReaderRepository) : ViewModel() {
         if (refreshing) return
         viewModelScope.launch {
             refreshing = true
-            lastRefreshStartedAt = System.currentTimeMillis()
             try { repository.refreshAll() } finally { refreshing = false }
         }
     }

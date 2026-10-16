@@ -17,9 +17,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,13 +34,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.codex.rssreader.diagnostics.LogLevel
 import com.codex.rssreader.diagnostics.RuntimeLogStore
+import com.codex.rssreader.diagnostics.BackgroundDiagnostics
+import com.codex.rssreader.diagnostics.BackgroundSnapshot
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun RuntimeLogScreen(logs: RuntimeLogStore, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun RuntimeLogScreen(logs: RuntimeLogStore, diagnostics: BackgroundDiagnostics, onBack: () -> Unit, modifier: Modifier = Modifier) {
     val entries by logs.entries.collectAsState(initial = null)
+    var snapshot by remember { mutableStateOf<BackgroundSnapshot?>(null) }
+    var refreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    suspend fun refreshDiagnostics() {
+        refreshing = true
+        try { snapshot = diagnostics.captureAndRecord("日志页采样") }
+        finally { refreshing = false }
+    }
+    LaunchedEffect(diagnostics) { refreshDiagnostics() }
     Column(modifier.background(ReaderBackground)) {
         Row(Modifier.fillMaxWidth().height(72.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回") }
@@ -45,30 +63,46 @@ fun RuntimeLogScreen(logs: RuntimeLogStore, onBack: () -> Unit, modifier: Modifi
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             fontSize = 12.sp, color = ReaderMuted,
         )
-        when {
-            entries == null -> Text("正在读取日志…", Modifier.padding(20.dp), color = ReaderMuted)
-            entries!!.isEmpty() -> Text("暂无运行日志", Modifier.padding(20.dp), color = ReaderMuted)
-            else -> LazyColumn(
-                Modifier.weight(1f), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(entries!!) { entry ->
-                    Surface(Modifier.fillMaxWidth()) {
-                        SelectionContainer {
-                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                val levelText = when (entry.level) {
-                                    LogLevel.INFO -> "信息"
-                                    LogLevel.WARNING -> "注意"
-                                    LogLevel.ERROR -> "错误"
-                                }
-                                val levelColor = when (entry.level) {
-                                    LogLevel.INFO -> ReaderMuted
-                                    LogLevel.WARNING -> Color(0xFF946000)
-                                    LogLevel.ERROR -> Color(0xFFB3261E)
-                                }
-                                Text("${LogTime.format(Instant.ofEpochMilli(entry.timestamp))} · $levelText", fontSize = 11.sp, color = levelColor)
-                                Text(entry.event, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                                if (entry.details.isNotEmpty()) Text(entry.details, fontSize = 12.sp, color = ReaderMuted)
+        LazyColumn(
+            Modifier.weight(1f), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            item {
+                Surface(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("后台诊断", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                            TextButton(enabled = !refreshing, onClick = { scope.launch { refreshDiagnostics() } }) {
+                                Text(if (refreshing) "读取中…" else "刷新诊断")
                             }
+                        }
+                        SelectionContainer {
+                            Text(snapshot?.asText() ?: "正在读取系统状态…", fontSize = 12.sp, color = ReaderMuted)
+                        }
+                        Text("这里显示采样时的状态。“最早可运行”不是承诺执行时间。刷新诊断不会抓取文章。\n任务没获调度或进程被杀时，App 无法自行写日志；请结合系统等待历史判断，部分厂商原因可能不公开。",
+                            fontSize = 11.sp, color = ReaderMuted)
+                    }
+                }
+            }
+            if (entries == null) item { Text("正在读取日志…", color = ReaderMuted) }
+            else if (entries!!.isEmpty()) item { Text("暂无运行日志", color = ReaderMuted) }
+            items(entries.orEmpty()) { entry ->
+                Surface(Modifier.fillMaxWidth()) {
+                    SelectionContainer {
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            val levelText = when (entry.level) {
+                                LogLevel.INFO -> "信息"
+                                LogLevel.WARNING -> "注意"
+                                LogLevel.ERROR -> "错误"
+                            }
+                            val levelColor = when (entry.level) {
+                                LogLevel.INFO -> ReaderMuted
+                                LogLevel.WARNING -> Color(0xFF946000)
+                                LogLevel.ERROR -> Color(0xFFB3261E)
+                            }
+                            Text("${LogTime.format(Instant.ofEpochMilli(entry.timestamp))} · $levelText", fontSize = 11.sp, color = levelColor)
+                            Text(entry.event, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            if (entry.details.isNotEmpty()) Text(entry.details, fontSize = 12.sp, color = ReaderMuted)
                         }
                     }
                 }
